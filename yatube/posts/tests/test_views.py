@@ -1,6 +1,6 @@
 from django.core.cache import cache
 from django.contrib.auth import get_user_model
-from django.test import Client, TestCase
+from django.test import Client, TestCase, override_settings
 from django.urls import reverse
 from django import forms
 from django.utils import timezone
@@ -13,13 +13,14 @@ import tempfile
 import shutil
 
 User = get_user_model()
+TEMP_MEDIA_ROOT = tempfile.mkdtemp(dir=settings.BASE_DIR)
 
 
+@override_settings(MEDIA_ROOT=TEMP_MEDIA_ROOT)
 class TaskPagesTests(TestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        settings.MEDIA_ROOT = tempfile.mkdtemp(dir=settings.BASE_DIR)
         cls.group = Group.objects.create(
             title='test_title',
             slug='test_slug',
@@ -78,13 +79,13 @@ class TaskPagesTests(TestCase):
     def test_post_create_page_show_correct_context(self):
         """Шаблон post_create сформирован с правильным контекстом."""
         response = self.authorized_client.get(reverse('posts:post_create'))
-        form_fields = {
-            'text': forms.fields.CharField,
-            'group': forms.fields.ChoiceField,
-            'image': forms.fields.ImageField,
-        }
+        form_fields = (
+            ('text', forms.fields.CharField),
+            ('group', forms.fields.ChoiceField),
+            ('image', forms.fields.ImageField),
+        )
         self.assertTrue(isinstance(response.context.get('form'), PostForm))
-        for value, expected in form_fields.items():
+        for value, expected in form_fields:
             with self.subTest(value=value):
                 form_field = response.context.get('form').fields.get(value)
                 self.assertIsInstance(form_field, expected)
@@ -94,15 +95,15 @@ class TaskPagesTests(TestCase):
         response = self.authorized_client.get(
             reverse('posts:post_edit', kwargs={'post_id': '1'})
         )
-        form_fields = {
-            'text': forms.fields.CharField,
-            'group': forms.fields.ChoiceField,
-            'image': forms.fields.ImageField,
-        }
+        form_fields = (
+            ('text', forms.fields.CharField),
+            ('group', forms.fields.ChoiceField),
+            ('image', forms.fields.ImageField),
+        )
         self.assertTrue(isinstance(response.context.get('form'), PostForm))
         self.assertTrue(response.context.get('is_edit'))
         self.assertIsInstance(response.context.get('is_edit'), bool)
-        for value, expected in form_fields.items():
+        for value, expected in form_fields:
             with self.subTest(value=value):
                 form_field = response.context.get('form').fields.get(value)
                 self.assertIsInstance(form_field, expected)

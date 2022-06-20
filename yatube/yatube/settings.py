@@ -1,5 +1,6 @@
 import os
-
+from dotenv import load_dotenv
+load_dotenv()
 
 PAGE_CONST = 10
 
@@ -7,7 +8,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
 
-SECRET_KEY = '+5+v5gf1psq(^(6th4qghr(b@hun99&+bxe)6jo&)_6pw!(+_x'
+SECRET_KEY = str(os.getenv('SECRET_KEY'))
 
 DEBUG = True
 

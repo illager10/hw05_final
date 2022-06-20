@@ -14,7 +14,10 @@ class Group(models.Model):
 
 
 class Post(models.Model):
-    text = models.TextField()
+    text = models.TextField(
+        verbose_name='Текст поста',
+        help_text='Текст нового поста'
+    )
     pub_date = models.DateTimeField(
         'date of publication',
         auto_now_add=True
@@ -30,7 +33,9 @@ class Post(models.Model):
         blank=True,
         null=True,
         on_delete=models.SET_NULL,
-        related_name='group_posts'
+        related_name='group_posts',
+        verbose_name='Группа',
+        help_text='Группа, к которой будет относиться пост'
     )
     image = models.ImageField(
         'Картинка',

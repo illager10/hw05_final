@@ -1,27 +1,26 @@
-# - Редактировать форму скартинкой
-# - Создаётся папка, нужно удалит в create_form
-
 from ..forms import PostForm
 from ..models import Group, Post
 from django.contrib.auth import get_user_model
-from django.test import Client, TestCase
+from django.test import Client, TestCase, override_settings
 from django.urls import reverse
 from http import HTTPStatus
 from django.utils import timezone
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.conf import settings
+from django.core.cache import cache
 import tempfile
 import shutil
 
 
 User = get_user_model()
+TEMP_MEDIA_ROOT = tempfile.mkdtemp(dir=settings.BASE_DIR)
 
 
+@override_settings(MEDIA_ROOT=TEMP_MEDIA_ROOT)
 class TaskCreateFormTests(TestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        settings.MEDIA_ROOT = tempfile.mkdtemp(dir=settings.BASE_DIR)
         cls.group = Group.objects.create(
             title='test_title',
             slug='test_slug',
@@ -48,6 +47,7 @@ class TaskCreateFormTests(TestCase):
         shutil.rmtree(settings.MEDIA_ROOT, ignore_errors=True)
 
     def setUp(self):
+        cache.clear()
         self.user = User.objects.create_user(username='test_username')
         self.authorized_client = Client()
         self.authorized_client.force_login(self.user)
@@ -70,22 +70,11 @@ class TaskCreateFormTests(TestCase):
                                      kwargs={'username': 'test_username'})
                              )
         self.assertEqual(Post.objects.count(), posts_count + 1)
-        self.assertTrue(
-            Post.objects.
-            filter(text='test_text_2',)
-        )
-        self.assertTrue(
-            Post.objects.
-            filter(author=self.user,)
-        )
-        self.assertTrue(
-            Post.objects.
-            filter(group=self.group,)
-        )
-        self.assertTrue(
-            Post.objects.
-            filter(image='posts/small.gif',)
-        )
+        post = Post.objects.first()
+        self.assertEqual(post.author, self.user)
+        self.assertEqual(post.text, 'test_text_2')
+        self.assertEqual(post.group, self.group)
+        self.assertEqual(post.image, 'posts/small.gif')
 
     def test_post_entry_can_be_edited(self):
         """Запись в Post редактируется"""
@@ -100,19 +89,10 @@ class TaskCreateFormTests(TestCase):
             data=form_data,
             follow=True
         )
-        self.assertTrue(
-            Post.objects.filter(
-                text='modified_text',
-            )
-        )
-        self.assertTrue(
-            Post.objects.
-            filter(author=self.user,)
-        )
-        self.assertTrue(
-            Post.objects.
-            filter(group=self.group)
-        )
+        post = Post.objects.first()
+        self.assertEqual(post.author, self.user)
+        self.assertEqual(post.text, 'modified_text')
+        self.assertEqual(post.group, self.group)
         self.assertEqual(Post.objects.first().pub_date.date(),
                          timezone.now().date()
                          )

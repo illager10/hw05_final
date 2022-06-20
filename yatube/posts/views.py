@@ -1,5 +1,5 @@
 from django.shortcuts import render, get_object_or_404, redirect
-from .models import Follow, Post, Group, User, Comment
+from .models import Follow, Post, Group, User
 from django.contrib.auth.decorators import login_required
 from .forms import PostForm, CommentForm
 from .utils import paginate_page
@@ -36,11 +36,7 @@ def profile(request, username):
     author = get_object_or_404(User, username=username)
     posts = author.author_posts.select_related('author', 'group').all()
     page_obj = paginate_page(request, posts)
-    if request.user.is_authenticated:
-        following = (Follow.objects.
-                     filter(user=request.user, author=author).exists())
-    else:
-        following = False
+    following = request.user.is_authenticated and author.following.exists()
     context = {
         'author': author,
         'page_obj': page_obj,
@@ -51,13 +47,11 @@ def profile(request, username):
 
 def post_detail(request, post_id):
     """Конкретная страница определённого поста."""
-    page_obj = get_object_or_404(Post, id=post_id)
-    comments = Comment.objects.filter(post=page_obj)
+    post = get_object_or_404(Post, id=post_id)
     form = CommentForm(request.POST or None)
     context = {
-        'page_obj': page_obj,
+        'post': post,
         'form': form,
-        'comments': comments
     }
     return render(request, 'posts/post_detail.html', context)
 
@@ -65,43 +59,43 @@ def post_detail(request, post_id):
 @login_required
 def post_create(request):
     """Страница создания поста."""
-    if request.method == 'POST':
-        form = PostForm(
-            request.POST or None,
-            files=request.FILES or None,
-        )
-        if form.is_valid():
-            post = form.save(commit=False)
-            post.author = request.user
-            post.save()
-            return redirect('posts:profile', request.user)
-        return render(request, 'posts/create_post.html', {'form': form})
     form = PostForm()
-    return render(request, 'posts/create_post.html', {'form': form})
+    if request.method != 'POST':
+        return render(request, 'posts/create_post.html', {'form': form})
+    form = PostForm(
+        request.POST or None,
+        files=request.FILES or None,
+    )
+    if not form.is_valid():
+        return render(request, 'posts/create_post.html', {'form': form})
+    post = form.save(commit=False)
+    post.author = request.user
+    post.save()
+    return redirect('posts:profile', request.user)
 
 
 @login_required
 def post_edit(request, post_id):
     """Страница редактирования поста."""
     post = get_object_or_404(Post, pk=post_id)
-    if request.method == 'POST':
-        form = PostForm(
-            request.POST or None,
-            files=request.FILES or None,
-            instance=post,
-        )
-        if form.is_valid():
-            form.save()
-            return redirect('posts:post_detail', post.id)
+    if request.method != 'POST':
+        form = PostForm(initial={'text': post.text, 'group': post.group})
         return render(
             request, 'posts/create_post.html',
             {'form': form, 'is_edit': True}
         )
-    form = PostForm(initial={'text': post.text, 'group': post.group})
-    return render(
-        request, 'posts/create_post.html',
-        {'form': form, 'is_edit': True}
+    form = PostForm(
+        request.POST or None,
+        files=request.FILES or None,
+        instance=post,
     )
+    if not form.is_valid():
+        return render(
+            request, 'posts/create_post.html',
+            {'form': form, 'is_edit': True}
+        )
+    form.save()
+    return redirect('posts:post_detail', post.id)
 
 
 @login_required
@@ -120,17 +114,19 @@ def add_comment(request, post_id):
 def follow_index(request):
     posts = Post.objects.filter(author__following__user=request.user)
     page_obj = paginate_page(request, posts)
-    context = {'page_obj': page_obj}
-    return render(request, 'posts/follow.html', context)
+    return render(request, 'posts/follow.html', {'page_obj': page_obj})
 
 
 @login_required
 def profile_follow(request, username):
     author = get_object_or_404(User, username=username)
-    if (request.user != author
-            and not Follow.objects.
-            filter(user=request.user, author=author).exists()):
-        Follow.objects.create(user=request.user, author=author)
+    if (request.user == author
+            or Follow.objects.filter(
+                user=request.user,
+                author=author).exists()):
+        return redirect(reverse('posts:profile',
+                                kwargs={'username': username}))
+    Follow.objects.create(user=request.user, author=author)
     return redirect(reverse('posts:profile', kwargs={'username': username}))
 
 
@@ -139,6 +135,6 @@ def profile_unfollow(request, username):
     author = get_object_or_404(User, username=username)
     follow = (Follow.objects.
               filter(user=request.user, author=author))
-    if (follow.exists()):
+    if follow.exists():
         follow.delete()
     return redirect(reverse('posts:profile', kwargs={'username': username}))
