@@ -111,18 +111,20 @@ class TaskPagesTests(TestCase):
     def test_many_post_correct_context(self):
         """Шаблоны, содержащие множдество постов содржат правильный контекст"""
         templates_pages_names = (
-            reverse('posts:index'),
-            reverse('posts:group_list', kwargs={'slug': 'test_slug'}),
-            reverse('posts:profile', kwargs={'username': 'test_usrneme'}),
-            reverse('posts:post_detail', kwargs={'post_id': '1'})
+            (reverse('posts:index'), 'page_obj'),
+            (reverse('posts:group_list', kwargs={'slug': 'test_slug'}),
+             'page_obj'),
+            (reverse('posts:profile', kwargs={'username': 'test_usrneme'}),
+             'page_obj'),
+            (reverse('posts:post_detail', kwargs={'post_id': '1'}), 'post')
         )
-        for templates in templates_pages_names:
-            with self.subTest(templates=templates):
+        for templates, object in templates_pages_names:
+            with self.subTest(templates=templates, object=object):
                 response = self.authorized_client.get(templates)
-                if isinstance(response.context['page_obj'], Post):
-                    first_object = response.context['page_obj']
+                if isinstance(response.context[object], Post):
+                    first_object = response.context[object]
                 else:
-                    first_object = response.context['page_obj'][0]
+                    first_object = response.context[object][0]
                 self.assertEqual(first_object.text, 'test_text')
                 self.assertEqual(first_object.group, self.group)
                 self.assertEqual(first_object.author, self.user)
