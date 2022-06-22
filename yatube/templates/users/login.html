@@ -12,7 +12,7 @@
           {% include 'includes/error_handling.html' %}
           <form method="post"
             {% if action_url %}
-              action="{% url action_url %}"
+              action="{% url 'users:login' %}"
             {% endif %}
           >
           {% csrf_token %}

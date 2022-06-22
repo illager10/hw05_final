@@ -7,7 +7,7 @@ from django.views.decorators.cache import cache_page
 from django.urls import reverse
 
 
-@cache_page(1 * 20)
+@cache_page(20)
 def index(request):
     """Главная страница со всеми постами."""
     post_list = Post.objects.select_related('author', 'group').all()
@@ -59,13 +59,12 @@ def post_detail(request, post_id):
 @login_required
 def post_create(request):
     """Страница создания поста."""
-    form = PostForm()
-    if request.method != 'POST':
-        return render(request, 'posts/create_post.html', {'form': form})
     form = PostForm(
         request.POST or None,
         files=request.FILES or None,
     )
+    if request.method != 'POST':
+        return render(request, 'posts/create_post.html', {'form': form})
     if not form.is_valid():
         return render(request, 'posts/create_post.html', {'form': form})
     post = form.save(commit=False)
@@ -78,21 +77,21 @@ def post_create(request):
 def post_edit(request, post_id):
     """Страница редактирования поста."""
     post = get_object_or_404(Post, pk=post_id)
-    if request.method != 'POST':
-        form = PostForm(initial={'text': post.text, 'group': post.group})
-        return render(
-            request, 'posts/create_post.html',
-            {'form': form, 'is_edit': True}
-        )
     form = PostForm(
         request.POST or None,
         files=request.FILES or None,
         instance=post,
     )
+    context = {'form': form, 'is_edit': True}
+    if request.method != 'POST':
+        return render(
+            request, 'posts/create_post.html',
+            context
+        )
     if not form.is_valid():
         return render(
             request, 'posts/create_post.html',
-            {'form': form, 'is_edit': True}
+            context
         )
     form.save()
     return redirect('posts:post_detail', post.id)
