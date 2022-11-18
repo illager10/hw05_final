@@ -1,7 +1,7 @@
 # Yatube project
 # Описание
 ---
-Очень перспективный и красивый проект
+Данный проект представляет собой сервис для обмена записей, состоящих из мзоборажений и подписей к ним.
 
 ---
 # Технологии
@@ -11,22 +11,45 @@
 2) Django
 
 ---
-# Как запустить
+# Как запустить проект
 ---
-1) Клонируйте репозиторй себе на компьютер
 
-2) Разверните в репозитории виртуальное окружение
+Клонировать репозиторий и перейти в него в командной строке:
 
-3) Активируйте виртуальное окружение.
+```python 
+git clone https://github.com/illager10/api_final_yatube.git
+```
 
-4) В виртуальном окружении установите зависимости
+```python 
+cd yatube_api
+```
 
-5) Запустите сайт 
+Cоздать и активировать виртуальное окружение:
 
----
-# Данные для связи
----
-Я буду в n-надцать часов в парке в чёрной шляпе
+```python 
+python -m venv venv
+```
 
----
+```python 
+source venv/Scripts/activate
+```
+
+Установить зависимости из файла requirements.txt:
+
+```python 
+pip install -r requirements.txt
+```
+
+Выполнить миграции:
+
+```python 
+python manage.py migrate
+```
+
+Запустить проект:
+
+```python 
+python manage.py runserver
+```
+
 <!-- [![CI](https://github.com/yandex-praktikum/hw05_final/actions/workflows/python-app.yml/badge.svg?branch=master)](https://github.com/yandex-praktikum/hw05_final/actions/workflows/python-app.yml) -->
