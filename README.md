@@ -7,9 +7,9 @@
 
 # Технологии
 
-1) Python
+* [Python](https://www.python.org)
 
-2) Django
+* [Django REST framework](https://www.django-rest-framework.org)
 
 
 # Как запустить проект
